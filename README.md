@@ -12,9 +12,7 @@ Pi ships with an `openai-completions` adapter that routes Ollama traffic through
 
 2. **Lossy capability mapping.** The compatibility layer normalises all models into an OpenAI-shaped box. Ollama-native capabilities like `thinking` (with model-specific levels), `vision`, and `embeddings` are either lost or incorrectly mapped.
 
-3. **No model administration.** The OpenAI compatibility layer exposes only `/v1/chat/completions`, `/v1/models`, and `/v1/embeddings`. You can't list running models (`/api/ps`), pull, push, create, copy, or delete models through it.
-
-4. **No native thinking control.** The Ollama `/api/chat` endpoint supports model-specific thinking levels (`"low"`, `"medium"`, `"high"`, `"max"` for DeepSeek V4), but the OpenAI compat shim's `reasoning_effort` mapping is coarse and doesn't handle per-model nuances.
+3. **No native thinking control.** The Ollama `/api/chat` endpoint supports model-specific thinking levels (`"low"`, `"medium"`, `"high"`, `"max"` for DeepSeek V4), but the OpenAI compat shim's `reasoning_effort` mapping is coarse and doesn't handle per-model nuances.
 
 ### Advantages of native API
 
@@ -26,10 +24,6 @@ Pi ships with an `openai-completions` adapter that routes Ollama traffic through
 | Context window | Not exposed | Parsed from `model_info` |
 | Thinking/reasoning | Coarse mapping | Model-specific levels |
 | Vision | Unreliable detection | `capabilities` + family heuristics |
-| Admin endpoints | None | pull, push, create, copy, delete |
-| Running models | None | `/api/ps` |
-| Version | None | `/api/version` |
-| Embeddings | Only via `/v1/embeddings` | Native `/api/embed` |
 
 ### DeepSeek compatibility
 
@@ -42,15 +36,7 @@ This extension specifically addresses two DeepSeek-specific issues:
 ## Install
 
 ```bash
-pi install npm:@kuyavinny/pi-ollama-api-native
-```
-
-Or from source:
-
-```bash
-git clone https://github.com/kuyavinny/pi-ollama-api-native.git
-cd pi-ollama-api-native
-pi install /absolute/path/to/pi-ollama-api-native
+pi install git:github.com/kuyavinny/pi-ollama-api-native
 ```
 
 Requires Ollama running with at least one tool-capable model pulled.
@@ -61,27 +47,9 @@ Set `OLLAMA_API_KEY` for `https://ollama.com/api` (cloud). For local Ollama leav
 
 | Command | Description |
 |---|---|
-| `/ollama` | Show subcommand help |
-| `/ollama models` or `/ollama list` | List all models with context + capabilities |
-| `/ollama refresh` | Re-discover models from `/api/tags` + `/api/show` |
-| `/ollama show <model>` | Dump `/api/show` response |
-| `/ollama ps` | List running models |
-| `/ollama version` | Show Ollama server version |
-| `/ollama pull <model>` | Pull a model |
-| `/ollama push <model>` | Push a model |
-| `/ollama create <name> [from]` | Create a model |
-| `/ollama copy <source> <dest>` | Copy a model |
-| `/ollama delete <model>` | Delete a model |
-| `/ollama embed <model> <text>` | Generate embeddings |
-
-Aliases: `/ollama-models`, `/ollama-refresh`, `/ollama-show`, `/ollama-ps`, `/ollama-version`, `/ollama-pull`, `/ollama-push`, `/ollama-create`, `/ollama-copy`, `/ollama-delete`, `/ollama-embed`.
-
-## Environment variables
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `OLLAMA_BASE_URL` | `https://ollama.com/api` | Override API base URL |
-| `OLLAMA_API_KEY` | — | API key for cloud access |
+| `/ollama-models` | List all models with context + capabilities |
+| `/ollama-refresh` | Re-discover models from `/api/tags` + `/api/show` |
+| `/ollama-show <model>` | Dump `/api/show` response |
 
 ## How it works
 

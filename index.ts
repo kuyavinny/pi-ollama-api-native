@@ -657,14 +657,6 @@ function parseCommandArgs(args: string): { command: string; rest: string[] } {
 }
 
 async function runCommand(args: string, ctx: any, pi: ExtensionAPI) {
-  const collectStatuses = async (response: Response): Promise<string[]> => {
-    const statuses: string[] = [];
-    await readNdjson(response, (chunk) => {
-      if (typeof chunk?.status === "string") statuses.push(chunk.status);
-    });
-    return statuses;
-  };
-
   const { command, rest } = parseCommandArgs(args);
 
   switch (command) {
@@ -695,92 +687,12 @@ async function runCommand(args: string, ctx: any, pi: ExtensionAPI) {
       ]);
       return;
     }
-    case "ps": {
-      const ps = await fetchJson<{ models?: unknown[] }>("/ps", undefined, currentBaseUrl, resolveApiKey());
-      ctx.ui.setWidget("ollama", [JSON.stringify(ps, null, 2)]);
-      return;
-    }
-    case "version": {
-      const version = await fetchText("/version", undefined, currentBaseUrl, resolveApiKey());
-      ctx.ui.notify(`Ollama ${version.trim()}`, "info");
-      return;
-    }
-    case "pull":
-    case "push": {
-      const model = rest[0];
-      if (!model) return ctx.ui.notify(`Usage: /ollama ${command} <model>`, "error");
-      const response = await fetch(apiUrl(`/${command}`), {
-        method: "POST",
-        headers: headers(resolveApiKey()),
-        body: JSON.stringify({ model, stream: true }),
-      });
-      if (!response.ok) throw new Error(await response.text());
-      const statuses = await collectStatuses(response);
-      ctx.ui.notify(`Ollama ${command}: ${statuses.at(-1) ?? "done"}`, "success");
-      return;
-    }
-    case "create": {
-      const model = rest[0];
-      if (!model) return ctx.ui.notify("Usage: /ollama create <model> [from]", "error");
-      const body: Record<string, unknown> = { model, stream: true };
-      if (rest[1]) body.from = rest[1];
-      const response = await fetch(apiUrl("/create"), {
-        method: "POST",
-        headers: headers(resolveApiKey()),
-        body: JSON.stringify(body),
-      });
-      if (!response.ok) throw new Error(await response.text());
-      const statuses = await collectStatuses(response);
-      ctx.ui.notify(`Ollama create: ${statuses.at(-1) ?? "done"}`, "success");
-      return;
-    }
-    case "copy": {
-      const source = rest[0];
-      const destination = rest[1];
-      if (!source || !destination) return ctx.ui.notify("Usage: /ollama copy <source> <destination>", "error");
-      const response = await fetch(apiUrl("/copy"), {
-        method: "POST",
-        headers: headers(resolveApiKey()),
-        body: JSON.stringify({ source, destination }),
-      });
-      if (!response.ok) throw new Error(await response.text());
-      ctx.ui.notify(`Copied ${source} → ${destination}`, "success");
-      return;
-    }
-    case "delete": {
-      const model = rest[0];
-      if (!model) return ctx.ui.notify("Usage: /ollama delete <model>", "error");
-      const response = await fetch(apiUrl("/delete"), {
-        method: "DELETE",
-        headers: headers(resolveApiKey()),
-        body: JSON.stringify({ model }),
-      });
-      if (!response.ok) throw new Error(await response.text());
-      ctx.ui.notify(`Deleted ${model}`, "success");
-      return;
-    }
-    case "embed": {
-      const model = rest[0];
-      const input = rest.slice(1).join(" ");
-      if (!model || !input) return ctx.ui.notify("Usage: /ollama embed <model> <text>", "error");
-      const result = await fetchJson<{ embeddings?: number[][] }>("/embed", { method: "POST", body: JSON.stringify({ model, input }) }, currentBaseUrl, resolveApiKey());
-      ctx.ui.setWidget("ollama", [JSON.stringify(result.embeddings?.[0]?.slice(0, 12) ?? [], null, 2)]);
-      return;
-    }
     case "help":
     default: {
       ctx.ui.setWidget("ollama", [
-        "/ollama models|list",
-        "/ollama refresh",
-        "/ollama show <model>",
-        "/ollama ps",
-        "/ollama version",
-        "/ollama pull <model>",
-        "/ollama push <model>",
-        "/ollama create <name> [from]",
-        "/ollama copy <source> <dest>",
-        "/ollama delete <model>",
-        "/ollama embed <model> <text>",
+        "/ollama models" + " — list all models with context + capabilities",
+        "/ollama refresh" + " — re-discover models after ollama pull",
+        "/ollama show <model>" + " — show model details",
       ]);
     }
   }
@@ -817,45 +729,5 @@ export default async function (pi: ExtensionAPI) {
   pi.registerCommand("ollama-show", {
     description: "Show Ollama model details",
     handler: async (args: string, ctx: any) => runCommand(`show ${args}`, ctx, pi),
-  });
-
-  pi.registerCommand("ollama-ps", {
-    description: "Show running Ollama models",
-    handler: async (_args: string, ctx: any) => runCommand("ps", ctx, pi),
-  });
-
-  pi.registerCommand("ollama-version", {
-    description: "Show Ollama version",
-    handler: async (_args: string, ctx: any) => runCommand("version", ctx, pi),
-  });
-
-  pi.registerCommand("ollama-pull", {
-    description: "Pull an Ollama model",
-    handler: async (args: string, ctx: any) => runCommand(`pull ${args}`, ctx, pi),
-  });
-
-  pi.registerCommand("ollama-push", {
-    description: "Push an Ollama model",
-    handler: async (args: string, ctx: any) => runCommand(`push ${args}`, ctx, pi),
-  });
-
-  pi.registerCommand("ollama-create", {
-    description: "Create an Ollama model",
-    handler: async (args: string, ctx: any) => runCommand(`create ${args}`, ctx, pi),
-  });
-
-  pi.registerCommand("ollama-copy", {
-    description: "Copy an Ollama model",
-    handler: async (args: string, ctx: any) => runCommand(`copy ${args}`, ctx, pi),
-  });
-
-  pi.registerCommand("ollama-delete", {
-    description: "Delete an Ollama model",
-    handler: async (args: string, ctx: any) => runCommand(`delete ${args}`, ctx, pi),
-  });
-
-  pi.registerCommand("ollama-embed", {
-    description: "Create Ollama embeddings",
-    handler: async (args: string, ctx: any) => runCommand(`embed ${args}`, ctx, pi),
   });
 }
