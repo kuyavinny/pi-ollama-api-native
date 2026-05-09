@@ -42,13 +42,13 @@ This extension specifically addresses two DeepSeek-specific issues:
 ## Install
 
 ```bash
-pi install npm:@glenmorev/pi-ollama-api-native
+pi install npm:@kuyavinny/pi-ollama-api-native
 ```
 
 Or from source:
 
 ```bash
-git clone https://github.com/glenmorev/pi-ollama-api-native.git
+git clone https://github.com/kuyavinny/pi-ollama-api-native.git
 cd pi-ollama-api-native
 pi install /absolute/path/to/pi-ollama-api-native
 ```
