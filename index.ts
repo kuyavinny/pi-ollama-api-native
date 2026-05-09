@@ -17,6 +17,7 @@ import {
   type ToolResultMessage,
   type Usage,
 } from "@mariozechner/pi-ai";
+import { Container, SelectList, Text } from "@mariozechner/pi-tui";
 
 type OllamaTag = {
   name: string;
@@ -663,8 +664,34 @@ async function runCommand(args: string, ctx: any, pi: ExtensionAPI) {
     case "models":
     case "list": {
       await refreshProvider(pi).catch(() => undefined);
-      ctx.ui.setWidget("ollama", renderCatalog(currentCatalog));
-      ctx.ui.notify(`Ollama models: ${currentCatalog.entries.length} total`, "info");
+      const items = renderCatalog(currentCatalog);
+      if (items.length === 0) {
+        ctx.ui.notify("No models found. Run /ollama-refresh to retry.", "warning");
+        return;
+      }
+      await ctx.ui.custom<void>((tui, theme, _kb, done) => {
+        const container = new Container();
+        container.addChild(new Text(theme.fg("accent", theme.bold(`Ollama models · ${items.length} total`))));
+        const selectList = new SelectList(items, Math.min(items.length, 20), {
+          selectedPrefix: (text: string) => theme.fg("accent", text),
+          selectedText: (text: string) => theme.fg("accent", text),
+          description: (text: string) => theme.fg("muted", text),
+          scrollInfo: (text: string) => theme.fg("dim", text),
+          noMatch: (text: string) => theme.fg("warning", text),
+        });
+        selectList.onCancel = () => done();
+        selectList.onAccept = () => done();
+        container.addChild(selectList);
+        container.addChild(new Text(theme.fg("dim", "↑↓ scroll · / filter · esc close")));
+        return {
+          render(width: number) { return container.render(width); },
+          invalidate() { container.invalidate(); },
+          handleInput(data: string) {
+            selectList.handleInput(data);
+            tui.requestRender();
+          },
+        };
+      });
       return;
     }
     case "refresh": {
