@@ -1,0 +1,15 @@
+{
+  "name": "pi-ollama-api-native",
+  "version": "0.1.0",
+  "description": "Native Ollama API provider extension for pi coding agent",
+  "type": "module",
+  "keywords": ["pi-package", "ollama", "llm", "agent", "native"],
+  "pi": {
+    "extensions": ["./index.ts"]
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*",
+    "@mariozechner/pi-ai": "*"
+  },
+  "license": "MIT"
+}
