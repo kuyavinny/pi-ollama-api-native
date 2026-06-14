@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import {
   calculateCost,
   createAssistantMessageEventStream,
@@ -16,8 +16,8 @@ import {
   type ToolCall,
   type ToolResultMessage,
   type Usage,
-} from "@mariozechner/pi-ai";
-import { Container, SelectList, Text } from "@mariozechner/pi-tui";
+} from "@earendil-works/pi-ai";
+import { Container, SelectList, Text } from "@earendil-works/pi-tui";
 
 type OllamaTag = {
   name: string;
@@ -116,14 +116,17 @@ function isVisionModel(tag: OllamaTag, show?: OllamaShowResponse): boolean {
 }
 
 function isThinkingModel(tag: OllamaTag, show?: OllamaShowResponse): boolean {
+  if ((show?.capabilities ?? []).includes("thinking")) return true;
   const name = `${tag.name} ${tag.model ?? ""} ${show?.details?.family ?? ""} ${show?.details?.families?.join(" ") ?? ""}`.toLowerCase();
   return /(^|[-_/])(qwen3|gpt-oss|deepseek-r1|deepseek-v3\.1|deepseek-r1-distill|qwq|gemma3n|phi4-reasoning|o1|r1)/.test(name);
 }
 
 function isToolCapable(tag: OllamaTag, show?: OllamaShowResponse): boolean {
   if (isEmbeddingModel(tag, show)) return false;
-  if ((show?.capabilities ?? []).includes("completion")) return true;
-  return true;
+  const caps = show?.capabilities ?? [];
+  if (caps.includes("tools")) return true;
+  if (caps.includes("completion")) return true;
+  return false;
 }
 
 function inferContextWindow(show?: OllamaShowResponse): number {
@@ -137,13 +140,13 @@ function inferContextWindow(show?: OllamaShowResponse): number {
   const match = params.match(/num_ctx\s+(\d+)/i);
   if (match) return Number(match[1]);
 
-  return 128000;
+  return 262144;
 }
 
 function inferMaxTokens(contextWindow: number, tag: OllamaTag, show?: OllamaShowResponse): number {
   if (isEmbeddingModel(tag, show)) return 0;
-  if (isThinkingModel(tag, show)) return Math.max(4096, Math.min(32768, Math.floor(contextWindow / 4)));
-  return Math.max(2048, Math.min(16384, Math.floor(contextWindow / 8)));
+  if (isThinkingModel(tag, show)) return Math.max(8192, Math.min(131072, Math.floor(contextWindow / 4)));
+  return Math.max(4096, Math.min(65536, Math.floor(contextWindow / 8)));
 }
 
 function thinkingLevelMap(tag: OllamaTag, show?: OllamaShowResponse) {
